@@ -13,6 +13,11 @@ interface ImagePreviewProps {
   primaryColor: string;
 }
 
+interface Position {
+  x: number;
+  y: number;
+}
+
 const SIZES = [
   { name: "Twitter", width: 1200, height: 675 },
   { name: "Medium", width: 1400, height: 787 },
@@ -29,12 +34,16 @@ export default function ImagePreview({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
   const [renderError, setRenderError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Local composition states
   const [textSize, setTextSize] = useState(1);
-  const [verticalPosition, setVerticalPosition] = useState(0.5);
+  const [textPosition, setTextPosition] = useState<Position>({ x: 0.5, y: 0.5 });
   const [colorIntensity, setColorIntensity] = useState(1);
   const [backgroundBlur, setBackgroundBlur] = useState(0);
+
+  // Store canvas dimensions for coordinate calculations
+  const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -53,6 +62,7 @@ export default function ImagePreview({
         // Set default canvas size and clear
         canvas.width = 1200;
         canvas.height = 675;
+        setCanvasDimensions({ width: 1200, height: 675 });
         ctx.fillStyle = '#f0f0f0';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         return;
@@ -64,6 +74,7 @@ export default function ImagePreview({
           // Set canvas dimensions
           canvas.width = img.width;
           canvas.height = img.height;
+          setCanvasDimensions({ width: img.width, height: img.height });
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
           // Apply background blur if needed
@@ -93,8 +104,9 @@ export default function ImagePreview({
             ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
           }
 
-          // Calculate vertical position
-          const yPosition = canvas.height * verticalPosition;
+          // Calculate position based on relative coordinates
+          const xPos = canvas.width * textPosition.x;
+          const yPos = canvas.height * textPosition.y;
 
           // Add shadow for better visibility
           ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
@@ -105,14 +117,14 @@ export default function ImagePreview({
           // Draw white outline
           ctx.strokeStyle = 'white';
           ctx.lineWidth = fontSize * 0.08;
-          ctx.strokeText(title, canvas.width / 2, yPosition);
+          ctx.strokeText(title, xPos, yPos);
 
           // Draw text with color intensity
           ctx.fillStyle = primaryColor;
           if (colorIntensity !== 1) {
             ctx.globalAlpha = Math.max(0, Math.min(1, colorIntensity));
           }
-          ctx.fillText(title, canvas.width / 2, yPosition);
+          ctx.fillText(title, xPos, yPos);
 
           // Reset
           ctx.globalAlpha = 1;
@@ -147,7 +159,39 @@ export default function ImagePreview({
     };
 
     renderPreview();
-  }, [imageUrl, title, font, primaryColor, textSize, verticalPosition, colorIntensity, backgroundBlur, toast]);
+  }, [imageUrl, title, font, primaryColor, textSize, textPosition, colorIntensity, backgroundBlur, toast]);
+
+  // Handle mouse events for drag and drop
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!imageUrl) return;
+    setIsDragging(true);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / canvas.width;
+    const y = (e.clientY - rect.top) / canvas.height;
+    setTextPosition({ x, y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging || !imageUrl) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / canvas.width;
+    const y = (e.clientY - rect.top) / canvas.height;
+    setTextPosition({ x, y });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
 
   const handleDownload = async (width: number, height: number, name: string) => {
     if (!canvasRef.current) return;
@@ -185,7 +229,11 @@ export default function ImagePreview({
         ) : (
           <canvas
             ref={canvasRef}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover cursor-move"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
           />
         )}
       </div>
@@ -196,8 +244,6 @@ export default function ImagePreview({
             <CompositionControls
               textSize={textSize}
               onTextSizeChange={setTextSize}
-              verticalPosition={verticalPosition}
-              onVerticalPositionChange={setVerticalPosition}
               colorIntensity={colorIntensity}
               onColorIntensityChange={setColorIntensity}
               backgroundBlur={backgroundBlur}

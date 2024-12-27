@@ -4,8 +4,6 @@ import { Label } from "@/components/ui/label";
 interface CompositionControlsProps {
   textSize: number;
   onTextSizeChange: (value: number) => void;
-  verticalPosition: number;
-  onVerticalPositionChange: (value: number) => void;
   colorIntensity: number;
   onColorIntensityChange: (value: number) => void;
   backgroundBlur: number;
@@ -15,8 +13,6 @@ interface CompositionControlsProps {
 export default function CompositionControls({
   textSize,
   onTextSizeChange,
-  verticalPosition,
-  onVerticalPositionChange,
   colorIntensity,
   onColorIntensityChange,
   backgroundBlur,
@@ -31,18 +27,6 @@ export default function CompositionControls({
           onValueChange={([value]) => onTextSizeChange(value)}
           min={0.5}
           max={2}
-          step={0.1}
-          className="w-full"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Vertical Position</Label>
-        <Slider
-          value={[verticalPosition]}
-          onValueChange={([value]) => onVerticalPositionChange(value)}
-          min={0.2}
-          max={0.8}
           step={0.1}
           className="w-full"
         />
