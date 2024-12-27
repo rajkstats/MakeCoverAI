@@ -17,7 +17,7 @@ export class FireworksClient {
   }
 
   async generateImage(prompt: string): Promise<string> {
-    console.log("Generating image with prompt:", prompt);
+    console.log("Starting image generation with prompt:", prompt);
 
     try {
       const response = await fetch(
@@ -50,18 +50,22 @@ export class FireworksClient {
         }
       );
 
+      console.log("API response status:", response.status);
+
       if (!response.ok) {
-        const error = await response.text();
-        console.error("Fireworks API error:", error);
-        throw new Error(`Failed to generate image: ${error}`);
+        const errorText = await response.text();
+        console.error("Fireworks API error response:", errorText);
+        throw new Error(`Failed to generate image: ${response.status} - ${errorText}`);
       }
 
       const buffer = await response.arrayBuffer();
       const base64 = Buffer.from(buffer).toString('base64');
+
+      console.log("Successfully generated image");
       return `data:image/jpeg;base64,${base64}`;
     } catch (error) {
-      console.error("Error details:", error);
-      throw error;
+      console.error("Image generation error details:", error);
+      throw new Error(`Image generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
@@ -71,6 +75,8 @@ export function createPrompt(params: {
   style: string;
   primaryColor: string;
 }): string {
+  console.log("Creating prompt with params:", params);
+
   const { title, style, primaryColor } = params;
 
   // Define base style characteristics
@@ -128,12 +134,14 @@ export function createPrompt(params: {
     }, thematic elements that capture the essence of ${title}`;
   }
 
-  // Combine style and theme into final prompt
-  return `Create a sophisticated blog cover image that combines ${stylePrompts[style]}.
+  const finalPrompt = `Create a sophisticated blog cover image that combines ${stylePrompts[style]}.
 Main theme: ${themeVisuals}.
 Visual style: Professional composition with ${stylePrompts[style]}.
 Color palette: Elegant use of ${primaryColor} as the primary color with harmonious complementary tones.
 Composition requirements: High-quality artistry, balanced layout, subtle depth and dimensionality.
 Additional elements: Professional lighting effects, refined gradients, cohesive visual storytelling.
 Image purpose: Professional blog header focusing on the theme of "${title}".`;
+
+  console.log("Generated prompt:", finalPrompt);
+  return finalPrompt;
 }
