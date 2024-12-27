@@ -24,6 +24,13 @@ const SIZES = [
   { name: "WordPress", width: 1200, height: 628 },
 ];
 
+// Grid configuration
+const GRID = {
+  rows: 3,
+  cols: 3,
+  snapThreshold: 0.05, // Distance to snap (5% of canvas size)
+};
+
 export default function ImagePreview({
   imageUrl,
   loading,
@@ -45,6 +52,38 @@ export default function ImagePreview({
 
   // Store canvas dimensions for coordinate calculations
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
+
+  // Function to find nearest grid point
+  const findNearestGridPoint = (x: number, y: number): Position | null => {
+    const gridPoints: Position[] = [];
+
+    // Generate grid points
+    for (let row = 0; row <= GRID.rows; row++) {
+      for (let col = 0; col <= GRID.cols; col++) {
+        gridPoints.push({
+          x: col / GRID.cols,
+          y: row / GRID.rows,
+        });
+      }
+    }
+
+    // Find nearest point within threshold
+    let nearest: Position | null = null;
+    let minDistance = Infinity;
+
+    gridPoints.forEach(point => {
+      const dx = point.x - x;
+      const dy = point.y - y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < GRID.snapThreshold && distance < minDistance) {
+        minDistance = distance;
+        nearest = point;
+      }
+    });
+
+    return nearest;
+  };
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -88,6 +127,33 @@ export default function ImagePreview({
 
           // Reset filter for text
           ctx.filter = 'none';
+
+          // Draw grid when dragging
+          if (isDragging) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+
+            // Draw vertical lines
+            for (let i = 1; i < GRID.cols; i++) {
+              const x = (canvas.width * i) / GRID.cols;
+              ctx.beginPath();
+              ctx.moveTo(x, 0);
+              ctx.lineTo(x, canvas.height);
+              ctx.stroke();
+            }
+
+            // Draw horizontal lines
+            for (let i = 1; i < GRID.rows; i++) {
+              const y = (canvas.height * i) / GRID.rows;
+              ctx.beginPath();
+              ctx.moveTo(0, y);
+              ctx.lineTo(canvas.width, y);
+              ctx.stroke();
+            }
+
+            ctx.setLineDash([]);
+          }
 
           // Text configuration
           ctx.textAlign = 'center';
@@ -227,10 +293,22 @@ export default function ImagePreview({
 
     // Update text position if dragging
     if (isDragging) {
-      // Clamp the position within the canvas bounds
-      const newX = Math.max(0.1, Math.min(0.9, x / canvas.width));
-      const newY = Math.max(0.1, Math.min(0.9, y / canvas.height));
-      setTextPosition({ x: newX, y: newY });
+      // Calculate relative position
+      const newX = x / canvas.width;
+      const newY = y / canvas.height;
+
+      // Find nearest grid point if within threshold
+      const nearestPoint = findNearestGridPoint(newX, newY);
+
+      if (nearestPoint) {
+        // Snap to grid point
+        setTextPosition(nearestPoint);
+      } else {
+        // Clamp the position within the canvas bounds
+        const clampedX = Math.max(0.1, Math.min(0.9, newX));
+        const clampedY = Math.max(0.1, Math.min(0.9, newY));
+        setTextPosition({ x: clampedX, y: clampedY });
+      }
     } else {
       // Check if mouse is over text area to show move guide
       const ctx = canvas.getContext('2d')!;
