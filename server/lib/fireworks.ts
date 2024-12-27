@@ -19,9 +19,8 @@ export class FireworksClient {
     console.log("Generating image with prompt:", prompt);
 
     try {
-      const modelEndpoint = "workflows/accounts/fireworks/models/accounts/raj-k-stats-72993c/deployedModels/flux-1-dev-fp8-c1ca32b2/text_to_image";
       const response = await fetch(
-        `${this.baseUrl}/${modelEndpoint}`,
+        `${this.baseUrl}/workflows/accounts/fireworks/models/flux-1-dev-fp8/text_to_image`,
         {
           method: "POST",
           headers: {
