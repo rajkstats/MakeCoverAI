@@ -1,3 +1,10 @@
+interface TextComposition {
+  size: number;
+  verticalPosition: number;
+  colorIntensity: number;
+  backgroundBlur: number;
+}
+
 interface GenerateImageParams {
   title: string;
   description: string;
@@ -5,6 +12,7 @@ interface GenerateImageParams {
   logo: File | null;
   font: string;
   primaryColor: string;
+  textComposition: TextComposition;
 }
 
 export async function generateImage(params: GenerateImageParams): Promise<string> {
@@ -14,6 +22,7 @@ export async function generateImage(params: GenerateImageParams): Promise<string
   formData.append("style", params.style);
   formData.append("font", params.font);
   formData.append("primaryColor", params.primaryColor);
+  formData.append("textComposition", JSON.stringify(params.textComposition));
   if (params.logo) {
     formData.append("logo", params.logo);
   }
