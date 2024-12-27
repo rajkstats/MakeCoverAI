@@ -19,20 +19,18 @@ export class FireworksClient {
     console.log("Generating image with prompt:", prompt);
 
     try {
+      const modelEndpoint = "workflows/accounts/fireworks/models/accounts/raj-k-stats-72993c/deployedModels/flux-1-dev-fp8-c1ca32b2/text_to_image";
       const response = await fetch(
-        `${this.baseUrl}/text-to-image`,
+        `${this.baseUrl}/${modelEndpoint}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Accept": "image/jpeg",
             "Authorization": `Bearer ${this.apiKey}`,
           },
           body: JSON.stringify({
-            model: "accounts/fireworks/models/flux",
             prompt,
-            n: 1,
-            size: "1024x1024",
-            steps: 50,
           }),
         }
       );
@@ -40,16 +38,13 @@ export class FireworksClient {
       if (!response.ok) {
         const error = await response.text();
         console.error("Fireworks API error:", error);
-        throw new Error("Failed to generate image");
+        throw new Error(`Failed to generate image: ${error}`);
       }
 
-      const data = await response.json();
-      if (!data.images?.[0]?.url) {
-        console.error("Unexpected API response:", data);
-        throw new Error("Invalid API response format");
-      }
-
-      return data.images[0].url;
+      // Since we're accepting image/jpeg, we'll get binary data back
+      const buffer = await response.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString('base64');
+      return `data:image/jpeg;base64,${base64}`;
     } catch (error) {
       console.error("Error details:", error);
       throw error;
