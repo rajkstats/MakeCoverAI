@@ -93,14 +93,20 @@ export function createPrompt(params: {
     creative: "artistic expression, unique creative elements, dynamic artistic composition, imaginative design",
   };
 
-  // Create the final prompt combining the user's description with style guidance
-  const finalPrompt = `Create a sophisticated blog cover image that combines ${stylePrompts[style]}.
-Main theme: ${description}.
-Visual style: Professional composition with ${stylePrompts[style]}.
-Color palette: Elegant use of ${primaryColor} as the primary color with harmonious complementary tones.
-Composition requirements: High-quality artistry, balanced layout, subtle depth and dimensionality.
-Additional elements: Professional lighting effects, refined gradients, cohesive visual storytelling.
-Image purpose: Professional blog header image.`;
+  // Create a detailed prompt that focuses on the description while incorporating style
+  const finalPrompt = `Create a professional blog cover image with the following theme: ${description}. 
+The image should incorporate ${stylePrompts[style]} and use ${primaryColor} as a key color element.
+The composition should be balanced and visually striking, with:
+- High-quality artistic elements that reflect the description
+- Professional lighting and atmospheric effects
+- Subtle depth and dimensional qualities
+- Clean, uncluttered layout suitable for text overlay
+- No text or typography in the generated image
+Additional requirements:
+- Maintain visual harmony while emphasizing the main theme
+- Create an engaging backdrop that complements but doesn't overwhelm
+- Ensure the image has areas suitable for text overlay
+The image should be sophisticated and polished, perfect for a professional blog header.`;
 
   console.log("Generated prompt:", finalPrompt);
   return finalPrompt;
