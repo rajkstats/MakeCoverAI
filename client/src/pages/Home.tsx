@@ -13,16 +13,72 @@ import { useMutation } from "@tanstack/react-query";
 import { generateImage } from "@/lib/api";
 import type { StyleTemplate } from "@/lib/templates";
 
+// Preset configurations for each style
+const stylePresets: Record<StyleTemplate, {
+  font: string;
+  primaryColor: string;
+  textSize: number;
+  textPosition: { x: number; y: number };
+}> = {
+  modern: {
+    font: "inter",
+    primaryColor: "#000000",
+    textSize: 1,
+    textPosition: { x: 0.5, y: 0.5 },
+  },
+  minimal: {
+    font: "helvetica",
+    primaryColor: "#333333",
+    textSize: 0.8,
+    textPosition: { x: 0.5, y: 0.33 },
+  },
+  bold: {
+    font: "helvetica",
+    primaryColor: "#111111",
+    textSize: 1.5,
+    textPosition: { x: 0.5, y: 0.5 },
+  },
+  tech: {
+    font: "roboto",
+    primaryColor: "#0066cc",
+    textSize: 1.2,
+    textPosition: { x: 0.5, y: 0.5 },
+  },
+  creative: {
+    font: "georgia",
+    primaryColor: "#cc3366",
+    textSize: 1.3,
+    textPosition: { x: 0.33, y: 0.67 },
+  },
+};
+
 export default function Home() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedStyle, setSelectedStyle] = useState<StyleTemplate>("modern");
   const [logo, setLogo] = useState<File | null>(null);
-  const [font, setFont] = useState("inter");
-  const [primaryColor, setPrimaryColor] = useState("#000000");
+  const [font, setFont] = useState(stylePresets.modern.font);
+  const [primaryColor, setPrimaryColor] = useState(stylePresets.modern.primaryColor);
+  const [textSize, setTextSize] = useState(stylePresets.modern.textSize);
+  const [textPosition, setTextPosition] = useState(stylePresets.modern.textPosition);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
   const { toast } = useToast();
+
+  // Handle style template change
+  const handleStyleChange = (style: StyleTemplate) => {
+    setSelectedStyle(style);
+    const preset = stylePresets[style];
+    setFont(preset.font);
+    setPrimaryColor(preset.primaryColor);
+    setTextSize(preset.textSize);
+    setTextPosition(preset.textPosition);
+
+    toast({
+      title: "Style Applied",
+      description: `Applied ${style} style template`,
+    });
+  };
 
   const generateMutation = useMutation({
     mutationFn: generateImage,
@@ -68,6 +124,12 @@ export default function Home() {
       logo,
       font,
       primaryColor,
+      textComposition: {
+        size: textSize,
+        verticalPosition: textPosition.y,
+        colorIntensity: 1,
+        backgroundBlur: 0,
+      }
     });
   };
 
@@ -109,7 +171,7 @@ export default function Home() {
 
               <StyleSelector
                 selected={selectedStyle}
-                onSelect={setSelectedStyle}
+                onSelect={handleStyleChange}
               />
 
               <CustomizePanel
