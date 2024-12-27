@@ -41,12 +41,12 @@ export class FireworksClient {
                 weight: 1.0,
               },
               {
-                text: "text, typography, letters, words, title, heading, watermark, writing",
+                text: "text, typography, letters, words, title, heading, watermark, writing, label, sign, logo",
                 weight: -1.0,
               },
             ],
             negative_prompt:
-              "text, typography, letters, words, title, heading, watermark, writing, blurry, low quality, poor quality",
+              "text, typography, letters, words, title, heading, watermark, writing, label, sign, logo, text overlay, caption, subtitle, blurry, low quality, poor quality",
           }),
         },
       );

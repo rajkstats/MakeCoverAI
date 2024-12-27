@@ -57,30 +57,27 @@ export default function ImagePreview({ imageUrl, loading, title, font, primaryCo
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
-          // Calculate font size based on canvas width
-          const fontSize = Math.min(canvas.width * 0.1, canvas.height * 0.2);
+          // Calculate dynamic font size (adjusted for better visibility)
+          const maxWidth = canvas.width * 0.8; // 80% of canvas width
+          let fontSize = Math.min(canvas.width * 0.08, canvas.height * 0.15); // Slightly smaller initial size
           ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
 
-          // Measure text width
-          const textWidth = ctx.measureText(title).width;
-          const maxWidth = canvas.width * 0.8; // 80% of canvas width
-
-          // Adjust font size if text is too wide
+          // Measure and adjust text size if needed
+          let textWidth = ctx.measureText(title).width;
           if (textWidth > maxWidth) {
-            const scaleFactor = maxWidth / textWidth;
-            const adjustedSize = fontSize * scaleFactor;
-            ctx.font = `bold ${adjustedSize}px ${font}, sans-serif`;
+            fontSize *= maxWidth / textWidth;
+            ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
           }
 
           // Add shadow for better visibility
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-          ctx.shadowBlur = fontSize * 0.1;
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+          ctx.shadowBlur = fontSize * 0.15;
           ctx.shadowOffsetX = 2;
           ctx.shadowOffsetY = 2;
 
-          // Draw white outline
+          // Draw white outline (thicker for better visibility)
           ctx.strokeStyle = 'white';
-          ctx.lineWidth = fontSize * 0.05;
+          ctx.lineWidth = fontSize * 0.08;
           ctx.strokeText(title, canvas.width / 2, canvas.height / 2);
 
           // Draw colored text
