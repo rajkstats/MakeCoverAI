@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, MoveIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import CompositionControls from "./CompositionControls";
@@ -35,6 +35,7 @@ export default function ImagePreview({
   const { toast } = useToast();
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showMoveGuide, setShowMoveGuide] = useState(false);
 
   // Local composition states
   const [textSize, setTextSize] = useState(1);
@@ -126,6 +127,22 @@ export default function ImagePreview({
           }
           ctx.fillText(title, xPos, yPos);
 
+          // If dragging or hovering, show move guide
+          if (showMoveGuide || isDragging) {
+            // Draw a subtle indicator around the text
+            const padding = fontSize * 0.5;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(
+              xPos - textWidth / 2 - padding,
+              yPos - fontSize / 2 - padding,
+              textWidth + padding * 2,
+              fontSize + padding * 2
+            );
+            ctx.setLineDash([]);
+          }
+
           // Reset
           ctx.globalAlpha = 1;
           ctx.shadowColor = 'transparent';
@@ -159,30 +176,80 @@ export default function ImagePreview({
     };
 
     renderPreview();
-  }, [imageUrl, title, font, primaryColor, textSize, textPosition, colorIntensity, backgroundBlur, toast]);
+  }, [imageUrl, title, font, primaryColor, textSize, textPosition, colorIntensity, backgroundBlur, showMoveGuide, isDragging, toast]);
 
   // Handle mouse events for drag and drop
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!imageUrl) return;
-    setIsDragging(true);
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / canvas.width;
-    const y = (e.clientY - rect.top) / canvas.height;
-    setTextPosition({ x, y });
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const mouseX = (e.clientX - rect.left) * scaleX;
+    const mouseY = (e.clientY - rect.top) * scaleY;
+
+    // Calculate text bounds
+    const ctx = canvas.getContext('2d')!;
+    const fontSize = Math.min(canvas.width * 0.08, canvas.height * 0.15) * textSize;
+    ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
+    const textWidth = ctx.measureText(title).width;
+    const textHeight = fontSize;
+
+    const textX = canvas.width * textPosition.x;
+    const textY = canvas.height * textPosition.y;
+
+    // Check if click is within text bounds (with some padding)
+    const padding = fontSize * 0.5;
+    if (
+      mouseX >= textX - textWidth/2 - padding &&
+      mouseX <= textX + textWidth/2 + padding &&
+      mouseY >= textY - textHeight/2 - padding &&
+      mouseY <= textY + textHeight/2 + padding
+    ) {
+      setIsDragging(true);
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !imageUrl) return;
+    if (!imageUrl) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / canvas.width;
-    const y = (e.clientY - rect.top) / canvas.height;
-    setTextPosition({ x, y });
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+
+    // Update text position if dragging
+    if (isDragging) {
+      // Clamp the position within the canvas bounds
+      const newX = Math.max(0.1, Math.min(0.9, x / canvas.width));
+      const newY = Math.max(0.1, Math.min(0.9, y / canvas.height));
+      setTextPosition({ x: newX, y: newY });
+    } else {
+      // Check if mouse is over text area to show move guide
+      const ctx = canvas.getContext('2d')!;
+      const fontSize = Math.min(canvas.width * 0.08, canvas.height * 0.15) * textSize;
+      ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
+      const textWidth = ctx.measureText(title).width;
+      const textHeight = fontSize;
+
+      const textX = canvas.width * textPosition.x;
+      const textY = canvas.height * textPosition.y;
+
+      const padding = fontSize * 0.5;
+      setShowMoveGuide(
+        x >= textX - textWidth/2 - padding &&
+        x <= textX + textWidth/2 + padding &&
+        y >= textY - textHeight/2 - padding &&
+        y <= textY + textHeight/2 + padding
+      );
+    }
   };
 
   const handleMouseUp = () => {
@@ -191,6 +258,7 @@ export default function ImagePreview({
 
   const handleMouseLeave = () => {
     setIsDragging(false);
+    setShowMoveGuide(false);
   };
 
   const handleDownload = async (width: number, height: number, name: string) => {
@@ -227,14 +295,22 @@ export default function ImagePreview({
             {renderError}
           </div>
         ) : (
-          <canvas
-            ref={canvasRef}
-            className="w-full h-full object-cover cursor-move"
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseLeave}
-          />
+          <div className="relative">
+            <canvas
+              ref={canvasRef}
+              className={`w-full h-full object-cover ${isDragging ? 'cursor-grabbing' : (showMoveGuide ? 'cursor-grab' : 'cursor-default')}`}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+            />
+            {imageUrl && (
+              <div className="absolute bottom-4 left-4 p-2 bg-black/50 text-white rounded text-sm">
+                <MoveIcon className="inline-block w-4 h-4 mr-2" />
+                Drag text to reposition
+              </div>
+            )}
+          </div>
         )}
       </div>
 
