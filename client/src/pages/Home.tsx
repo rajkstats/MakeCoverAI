@@ -119,6 +119,9 @@ export default function Home() {
               <ImagePreview
                 imageUrl={generatedImage}
                 loading={generateMutation.isPending}
+                title={title}
+                font={font}
+                primaryColor={primaryColor}
               />
             </CardContent>
           </Card>

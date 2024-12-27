@@ -6,6 +6,9 @@ import { useEffect, useRef } from "react";
 interface ImagePreviewProps {
   imageUrl: string | null;
   loading: boolean;
+  title: string;
+  font: string;
+  primaryColor: string;
 }
 
 const SIZES = [
@@ -14,21 +17,80 @@ const SIZES = [
   { name: "WordPress", width: 1200, height: 628 },
 ];
 
-export default function ImagePreview({ imageUrl, loading }: ImagePreviewProps) {
+export default function ImagePreview({ imageUrl, loading, title, font, primaryColor }: ImagePreviewProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (imageUrl && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const img = new Image();
+      img.onload = () => {
+        // Set canvas dimensions to match image
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        // Draw image
+        ctx.drawImage(img, 0, 0);
+
+        // Configure text style
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Calculate font size based on canvas width
+        const fontSize = Math.min(canvas.width * 0.1, canvas.height * 0.2);
+        ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
+
+        // Measure text width
+        const textWidth = ctx.measureText(title).width;
+        const maxWidth = canvas.width * 0.8; // 80% of canvas width
+
+        // Adjust font size if text is too wide
+        if (textWidth > maxWidth) {
+          const scaleFactor = maxWidth / textWidth;
+          const adjustedSize = fontSize * scaleFactor;
+          ctx.font = `bold ${adjustedSize}px ${font}, sans-serif`;
+        }
+
+        // Add shadow for better visibility
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = fontSize * 0.1;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+
+        // Draw white outline
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = fontSize * 0.05;
+        ctx.strokeText(title, canvas.width / 2, canvas.height / 2);
+
+        // Draw colored text
+        ctx.fillStyle = primaryColor;
+        ctx.fillText(title, canvas.width / 2, canvas.height / 2);
+
+        // Reset shadow
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+      };
+      img.src = imageUrl;
+    }
+  }, [imageUrl, title, font, primaryColor]);
+
   const handleDownload = async (width: number, height: number, name: string) => {
-    if (!imageUrl) return;
+    if (!canvasRef.current) return;
 
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const canvas = canvasRef.current;
+      const dataUrl = canvas.toDataURL('image/png');
       const a = document.createElement("a");
-      a.href = url;
+      a.href = dataUrl;
       a.download = `cover-${name.toLowerCase()}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Download failed:", error);
     }
@@ -42,9 +104,8 @@ export default function ImagePreview({ imageUrl, loading }: ImagePreviewProps) {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : imageUrl ? (
-          <img
-            src={imageUrl}
-            alt="Generated cover"
+          <canvas
+            ref={canvasRef}
             className="w-full h-full object-cover"
           />
         ) : (
