@@ -30,6 +30,10 @@ export class FireworksClient {
           },
           body: JSON.stringify({
             prompt,
+            height: 1024,
+            width: 1024,
+            num_inference_steps: 50,
+            guidance_scale: 7.5,
           }),
         }
       );
@@ -40,7 +44,6 @@ export class FireworksClient {
         throw new Error(`Failed to generate image: ${error}`);
       }
 
-      // Since we're accepting image/jpeg, we'll get binary data back
       const buffer = await response.arrayBuffer();
       const base64 = Buffer.from(buffer).toString('base64');
       return `data:image/jpeg;base64,${base64}`;
@@ -59,17 +62,33 @@ export function createPrompt(params: {
   const { title, style, primaryColor } = params;
 
   const stylePrompts: Record<string, string> = {
-    modern: "modern, clean, minimalist design with balanced typography",
-    minimal: "minimal, elegant design focusing on essential elements",
-    bold: "bold, high-contrast design with strong typography",
-    tech: "tech-inspired design with geometric patterns and digital aesthetic",
-    creative: "creative, artistic design with unique layout and expressive elements",
+    modern: "minimalist composition with clean lines and geometric shapes",
+    minimal: "simple, elegant design with focus on negative space",
+    bold: "dramatic composition with strong visual hierarchy",
+    tech: "futuristic design with digital elements and tech patterns",
+    creative: "artistic composition with abstract elements and dynamic shapes",
   };
 
-  const basePrompt = `Create a blog cover image for an article titled "${title}". 
-Style: ${stylePrompts[style] || stylePrompts.modern}
-Color scheme: primarily using ${primaryColor}
-Requirements: professional quality, clean composition, text should be clearly readable`;
+  // Create a more descriptive prompt based on the title
+  const titleWords = title.toLowerCase().split(' ');
+  let conceptPrompt = '';
+
+  // Add specific imagery based on common tech/AI related words
+  if (titleWords.includes('transformer') || titleWords.includes('attention')) {
+    conceptPrompt = "neural network connections, glowing synapses, interconnected nodes";
+  } else if (titleWords.includes('ai') || titleWords.includes('intelligence')) {
+    conceptPrompt = "abstract digital brain patterns, circuit-like structures";
+  } else if (titleWords.includes('data') || titleWords.includes('analytics')) {
+    conceptPrompt = "flowing data streams, geometric patterns representing information flow";
+  } else {
+    conceptPrompt = "abstract shapes and patterns that represent the concept of " + title;
+  }
+
+  const basePrompt = `Create a professional blog cover image with ${stylePrompts[style] || stylePrompts.modern}.
+Main elements: ${conceptPrompt}.
+Color scheme: elegant use of ${primaryColor} as the primary color.
+Style requirements: high-quality, clean composition, suitable for text overlay, professional blog header.
+Additional details: subtle gradient effects, balanced composition, professional lighting.`;
 
   return basePrompt;
 }
