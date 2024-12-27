@@ -41,7 +41,7 @@ export class FireworksClient {
                 weight: 1.0
               }
             ],
-            negative_prompt: "blurry, low quality, text, watermark, letters, words, typography",
+            negative_prompt: "blurry, low quality, text, watermark, letters, words, typography, title, heading",
           }),
         }
       );
@@ -71,37 +71,65 @@ export function createPrompt(params: {
 
   // Define base style characteristics
   const stylePrompts: Record<string, string> = {
-    modern: "clean lines, contemporary design, sleek geometric shapes, minimalist approach",
-    minimal: "elegant simplicity, refined composition, subtle textures, plenty of whitespace",
-    bold: "high contrast elements, dramatic lighting, dynamic composition, impactful visuals",
-    tech: "digital patterns, circuit-like structures, futuristic elements, technological aesthetic",
-    creative: "abstract forms, artistic flourishes, unique visual elements, expressive design",
+    modern: "sleek contemporary aesthetic, clean minimal composition, sophisticated modern design elements",
+    minimal: "refined simplicity, elegant negative space, subtle details, balanced minimalist approach",
+    bold: "striking visual impact, dramatic contrasts, powerful composition, bold design elements",
+    tech: "futuristic tech aesthetic, digital patterns, innovative technological elements, cutting-edge visuals",
+    creative: "artistic expression, unique creative elements, dynamic artistic composition, imaginative design",
   };
 
-  // Analyze title for themes and concepts
-  const titleWords = title.toLowerCase().split(' ');
-  let conceptPrompt = '';
+  // Define specific themes and their visual representations
+  const themePatterns = [
+    {
+      keywords: ['ai', 'intelligence', 'machine', 'neural', 'deep', 'learning'],
+      visuals: "glowing neural pathways, interconnected nodes forming abstract patterns, flowing data streams, digital synapses, technological brain structures",
+    },
+    {
+      keywords: ['data', 'analytics', 'analysis', 'insights', 'metrics'],
+      visuals: "flowing information streams, abstract data visualization, dynamic graph patterns, interconnected data points, analytical structures",
+    },
+    {
+      keywords: ['future', 'innovation', 'technology', 'tech', 'digital'],
+      visuals: "futuristic cityscapes, innovative tech structures, glowing circuit patterns, advanced technological elements, digital transformation visuals",
+    },
+    {
+      keywords: ['nature', 'environment', 'eco', 'green', 'sustainable'],
+      visuals: "organic flowing patterns, natural elements, environmental motifs, sustainable design elements, biomorphic structures",
+    },
+    {
+      keywords: ['business', 'corporate', 'professional', 'enterprise'],
+      visuals: "professional geometric patterns, corporate architectural elements, modern business aesthetics, sophisticated structural designs",
+    },
+    {
+      keywords: ['creative', 'art', 'design', 'artistic', 'creative'],
+      visuals: "abstract artistic elements, creative design patterns, dynamic artistic compositions, expressive visual elements",
+    },
+  ];
 
-  // Map common themes to visual concepts
-  if (titleWords.some(word => ['ai', 'intelligence', 'machine', 'neural', 'deep'].includes(word))) {
-    conceptPrompt = "neural networks, interconnected nodes, abstract representation of artificial intelligence";
-  } else if (titleWords.some(word => ['data', 'analytics', 'analysis', 'insights'].includes(word))) {
-    conceptPrompt = "flowing data streams, abstract visualization of information, connected patterns";
-  } else if (titleWords.some(word => ['future', 'innovation', 'technology', 'tech'].includes(word))) {
-    conceptPrompt = "futuristic technological elements, innovative visual metaphors, cutting-edge design elements";
-  } else if (titleWords.some(word => ['nature', 'environment', 'eco', 'green'].includes(word))) {
-    conceptPrompt = "organic patterns, natural elements, flowing forms, environmental themes";
-  } else if (titleWords.some(word => ['business', 'corporate', 'professional'].includes(word))) {
-    conceptPrompt = "professional geometric shapes, corporate aesthetic, clean business-oriented design";
+  // Analyze title for themes
+  const titleWords = title.toLowerCase().split(' ');
+  let themeVisuals = '';
+
+  // Find matching theme pattern
+  const matchedTheme = themePatterns.find(pattern => 
+    pattern.keywords.some(keyword => titleWords.some(word => word.includes(keyword)))
+  );
+
+  if (matchedTheme) {
+    themeVisuals = matchedTheme.visuals;
   } else {
-    // Create a general concept based on title
-    conceptPrompt = `abstract visual representation of ${title}, thematic elements that evoke ${title}`;
+    // Create a custom theme based on title words
+    themeVisuals = `abstract visual metaphors of ${title}, symbolic representations incorporating ${
+      titleWords.join(' and ')
+    }, thematic elements that capture the essence of ${title}`;
   }
 
-  // Combine style and concept into final prompt
-  return `Create a professional blog cover image combining ${stylePrompts[style]}.
-Theme elements: ${conceptPrompt}.
-Color scheme: sophisticated use of ${primaryColor} as the primary color with complementary tones.
-Style requirements: high-quality, polished composition, professional blog header.
-Additional details: subtle depth effects, balanced composition, professional lighting, cohesive visual narrative.`;
+  // Combine style and theme into final prompt
+  return `Create a sophisticated blog cover image that combines ${stylePrompts[style]}.
+Main theme: ${themeVisuals}.
+Visual style: Professional composition with ${stylePrompts[style]}.
+Color palette: Elegant use of ${primaryColor} as the primary color with harmonious complementary tones.
+Composition requirements: High-quality artistry, balanced layout, subtle depth and dimensionality.
+Additional elements: Professional lighting effects, refined gradients, cohesive visual storytelling.
+Image purpose: Professional blog header focusing on the theme of "${title}".`;
 }
