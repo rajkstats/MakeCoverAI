@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import CompositionControls from "./CompositionControls";
 
 interface ImagePreviewProps {
   imageUrl: string | null;
@@ -22,6 +23,12 @@ export default function ImagePreview({ imageUrl, loading, title, font, primaryCo
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
   const [renderError, setRenderError] = useState<string | null>(null);
+
+  // Composition control states
+  const [textSize, setTextSize] = useState(1);
+  const [verticalPosition, setVerticalPosition] = useState(0.5);
+  const [colorIntensity, setColorIntensity] = useState(1);
+  const [backgroundBlur, setBackgroundBlur] = useState(0);
 
   useEffect(() => {
     if (imageUrl && canvasRef.current) {
@@ -43,23 +50,40 @@ export default function ImagePreview({ imageUrl, loading, title, font, primaryCo
             height: img.height,
             title,
             font,
-            color: primaryColor
+            color: primaryColor,
+            adjustments: {
+              textSize,
+              verticalPosition,
+              colorIntensity,
+              backgroundBlur
+            }
           });
 
           // Set canvas dimensions to match image
           canvas.width = img.width;
           canvas.height = img.height;
 
+          // Clear canvas
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          // Apply background blur if needed
+          if (backgroundBlur > 0) {
+            ctx.filter = `blur(${backgroundBlur}px)`;
+          }
+
           // Draw image
           ctx.drawImage(img, 0, 0);
+
+          // Reset filter for text
+          ctx.filter = 'none';
 
           // Configure text style
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
-          // Calculate dynamic font size (adjusted for better visibility)
-          const maxWidth = canvas.width * 0.8; // 80% of canvas width
-          let fontSize = Math.min(canvas.width * 0.08, canvas.height * 0.15); // Slightly smaller initial size
+          // Calculate dynamic font size with user adjustment
+          const maxWidth = canvas.width * 0.8;
+          let fontSize = Math.min(canvas.width * 0.08, canvas.height * 0.15) * textSize;
           ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
 
           // Measure and adjust text size if needed
@@ -69,22 +93,30 @@ export default function ImagePreview({ imageUrl, loading, title, font, primaryCo
             ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
           }
 
+          // Calculate vertical position
+          const yPosition = canvas.height * verticalPosition;
+
           // Add shadow for better visibility
           ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
           ctx.shadowBlur = fontSize * 0.15;
           ctx.shadowOffsetX = 2;
           ctx.shadowOffsetY = 2;
 
-          // Draw white outline (thicker for better visibility)
+          // Draw white outline
           ctx.strokeStyle = 'white';
           ctx.lineWidth = fontSize * 0.08;
-          ctx.strokeText(title, canvas.width / 2, canvas.height / 2);
+          ctx.strokeText(title, canvas.width / 2, yPosition);
 
-          // Draw colored text
-          ctx.fillStyle = primaryColor;
-          ctx.fillText(title, canvas.width / 2, canvas.height / 2);
+          // Apply color intensity to text
+          const color = primaryColor;
+          ctx.fillStyle = color;
+          if (colorIntensity !== 1) {
+            ctx.globalAlpha = Math.max(0, Math.min(1, colorIntensity));
+          }
+          ctx.fillText(title, canvas.width / 2, yPosition);
 
-          // Reset shadow
+          // Reset
+          ctx.globalAlpha = 1;
           ctx.shadowColor = 'transparent';
           ctx.shadowBlur = 0;
           ctx.shadowOffsetX = 0;
@@ -114,7 +146,7 @@ export default function ImagePreview({ imageUrl, loading, title, font, primaryCo
 
       img.src = imageUrl;
     }
-  }, [imageUrl, title, font, primaryColor, toast]);
+  }, [imageUrl, title, font, primaryColor, textSize, verticalPosition, colorIntensity, backgroundBlur, toast]);
 
   const handleDownload = async (width: number, height: number, name: string) => {
     if (!canvasRef.current) return;
@@ -164,19 +196,34 @@ export default function ImagePreview({ imageUrl, loading, title, font, primaryCo
       </div>
 
       {imageUrl && !renderError && (
-        <div className="grid grid-cols-3 gap-2">
-          {SIZES.map((size) => (
-            <Button
-              key={size.name}
-              variant="outline"
-              className="w-full"
-              onClick={() => handleDownload(size.width, size.height, size.name)}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              {size.name}
-            </Button>
-          ))}
-        </div>
+        <>
+          <Card className="p-4">
+            <CompositionControls
+              textSize={textSize}
+              onTextSizeChange={setTextSize}
+              verticalPosition={verticalPosition}
+              onVerticalPositionChange={setVerticalPosition}
+              colorIntensity={colorIntensity}
+              onColorIntensityChange={setColorIntensity}
+              backgroundBlur={backgroundBlur}
+              onBackgroundBlurChange={setBackgroundBlur}
+            />
+          </Card>
+
+          <div className="grid grid-cols-3 gap-2">
+            {SIZES.map((size) => (
+              <Button
+                key={size.name}
+                variant="outline"
+                className="w-full"
+                onClick={() => handleDownload(size.width, size.height, size.name)}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {size.name}
+              </Button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
