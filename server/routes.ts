@@ -1,10 +1,10 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
-import multer from 'multer';
+import * as multer from 'multer';
 import path from "path";
 
 // Configure multer for file uploads
-const upload = multer({
+const upload = multer.default({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
@@ -18,12 +18,21 @@ export function registerRoutes(app: Express): Server {
       const { title, style, font, primaryColor } = req.body;
       const logo = req.file;
 
+      console.log("Received generation request:", {
+        title,
+        style,
+        font,
+        primaryColor,
+        hasLogo: !!logo,
+      });
+
       // TODO: Integrate with Fireworks.ai
       // For now, return a placeholder image
       const imageUrl = `https://placehold.co/1200x675/png?text=${encodeURIComponent(
         title
       )}`;
 
+      console.log("Generated image URL:", imageUrl);
       res.json({ imageUrl });
     } catch (error) {
       console.error("Generation error:", error);
