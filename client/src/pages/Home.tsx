@@ -9,7 +9,6 @@ import { Loader2 } from "lucide-react";
 import StyleSelector from "@/components/StyleSelector";
 import CustomizePanel from "@/components/CustomizePanel";
 import ImagePreview from "@/components/ImagePreview";
-import CompositionControls from "@/components/CompositionControls";
 import { useMutation } from "@tanstack/react-query";
 import { generateImage } from "@/lib/api";
 import type { StyleTemplate } from "@/lib/templates";
@@ -22,12 +21,6 @@ export default function Home() {
   const [font, setFont] = useState("inter");
   const [primaryColor, setPrimaryColor] = useState("#000000");
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-
-  // Text composition states
-  const [textSize, setTextSize] = useState(1);
-  const [verticalPosition, setVerticalPosition] = useState(0.5);
-  const [colorIntensity, setColorIntensity] = useState(1);
-  const [backgroundBlur, setBackgroundBlur] = useState(0);
 
   const { toast } = useToast();
 
@@ -75,12 +68,6 @@ export default function Home() {
       logo,
       font,
       primaryColor,
-      textComposition: {
-        size: textSize,
-        verticalPosition,
-        colorIntensity,
-        backgroundBlur,
-      },
     });
   };
 
@@ -134,19 +121,6 @@ export default function Home() {
                 onColorChange={setPrimaryColor}
               />
 
-              <Card className="p-4">
-                <CompositionControls
-                  textSize={textSize}
-                  onTextSizeChange={setTextSize}
-                  verticalPosition={verticalPosition}
-                  onVerticalPositionChange={setVerticalPosition}
-                  colorIntensity={colorIntensity}
-                  onColorIntensityChange={setColorIntensity}
-                  backgroundBlur={backgroundBlur}
-                  onBackgroundBlurChange={setBackgroundBlur}
-                />
-              </Card>
-
               <Button
                 className="w-full"
                 onClick={handleGenerate}
@@ -172,10 +146,6 @@ export default function Home() {
                 title={title}
                 font={font}
                 primaryColor={primaryColor}
-                textSize={textSize}
-                verticalPosition={verticalPosition}
-                colorIntensity={colorIntensity}
-                backgroundBlur={backgroundBlur}
               />
             </CardContent>
           </Card>
