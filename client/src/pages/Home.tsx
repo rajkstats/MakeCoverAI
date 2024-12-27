@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +15,7 @@ import type { StyleTemplate } from "@/lib/templates";
 
 export default function Home() {
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [selectedStyle, setSelectedStyle] = useState<StyleTemplate>("modern");
   const [logo, setLogo] = useState<File | null>(null);
   const [font, setFont] = useState("inter");
@@ -49,8 +51,18 @@ export default function Home() {
       return;
     }
 
+    if (!description.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a description for the image",
+        variant: "destructive",
+      });
+      return;
+    }
+
     generateMutation.mutate({
       title,
+      description,
       style: selectedStyle,
       logo,
       font,
@@ -80,6 +92,17 @@ export default function Home() {
                   placeholder="Enter your blog title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Image Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe the image you want to generate..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="min-h-[100px]"
                 />
               </div>
 

@@ -1,5 +1,5 @@
 import fetch from "node-fetch";
-import { z } from 'zod';
+import { z } from "zod";
 
 interface FireworksConfig {
   apiKey: string;
@@ -26,8 +26,8 @@ export class FireworksClient {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Accept": "image/jpeg",
-            "Authorization": `Bearer ${this.apiKey}`,
+            Accept: "image/jpeg",
+            Authorization: `Bearer ${this.apiKey}`,
           },
           body: JSON.stringify({
             prompt,
@@ -38,16 +38,17 @@ export class FireworksClient {
             text_prompts: [
               {
                 text: prompt,
-                weight: 1.0
+                weight: 1.0,
               },
               {
                 text: "text, typography, letters, words, title, heading, watermark, writing",
-                weight: -1.0
-              }
+                weight: -1.0,
+              },
             ],
-            negative_prompt: "text, typography, letters, words, title, heading, watermark, writing, blurry, low quality, poor quality",
+            negative_prompt:
+              "text, typography, letters, words, title, heading, watermark, writing, blurry, low quality, poor quality",
           }),
-        }
+        },
       );
 
       console.log("API response status:", response.status);
@@ -55,29 +56,33 @@ export class FireworksClient {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Fireworks API error response:", errorText);
-        throw new Error(`Failed to generate image: ${response.status} - ${errorText}`);
+        throw new Error(
+          `Failed to generate image: ${response.status} - ${errorText}`,
+        );
       }
 
       const buffer = await response.arrayBuffer();
-      const base64 = Buffer.from(buffer).toString('base64');
+      const base64 = Buffer.from(buffer).toString("base64");
 
       console.log("Successfully generated image");
       return `data:image/jpeg;base64,${base64}`;
     } catch (error) {
       console.error("Image generation error details:", error);
-      throw new Error(`Image generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Image generation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 }
 
 export function createPrompt(params: {
-  title: string;
+  description: string;
   style: string;
   primaryColor: string;
 }): string {
   console.log("Creating prompt with params:", params);
 
-  const { title, style, primaryColor } = params;
+  const { description, style, primaryColor } = params;
 
   // Define base style characteristics
   const stylePrompts: Record<string, string> = {
@@ -88,59 +93,14 @@ export function createPrompt(params: {
     creative: "artistic expression, unique creative elements, dynamic artistic composition, imaginative design",
   };
 
-  // Define specific themes and their visual representations
-  const themePatterns = [
-    {
-      keywords: ['ai', 'intelligence', 'machine', 'neural', 'deep', 'learning'],
-      visuals: "glowing neural pathways, interconnected nodes forming abstract patterns, flowing data streams, digital synapses, technological brain structures",
-    },
-    {
-      keywords: ['data', 'analytics', 'analysis', 'insights', 'metrics'],
-      visuals: "flowing information streams, abstract data visualization, dynamic graph patterns, interconnected data points, analytical structures",
-    },
-    {
-      keywords: ['future', 'innovation', 'technology', 'tech', 'digital'],
-      visuals: "futuristic cityscapes, innovative tech structures, glowing circuit patterns, advanced technological elements, digital transformation visuals",
-    },
-    {
-      keywords: ['nature', 'environment', 'eco', 'green', 'sustainable'],
-      visuals: "organic flowing patterns, natural elements, environmental motifs, sustainable design elements, biomorphic structures",
-    },
-    {
-      keywords: ['business', 'corporate', 'professional', 'enterprise'],
-      visuals: "professional geometric patterns, corporate architectural elements, modern business aesthetics, sophisticated structural designs",
-    },
-    {
-      keywords: ['creative', 'art', 'design', 'artistic', 'creative'],
-      visuals: "abstract artistic elements, creative design patterns, dynamic artistic compositions, expressive visual elements",
-    },
-  ];
-
-  // Analyze title for themes
-  const titleWords = title.toLowerCase().split(' ');
-  let themeVisuals = '';
-
-  // Find matching theme pattern
-  const matchedTheme = themePatterns.find(pattern => 
-    pattern.keywords.some(keyword => titleWords.some(word => word.includes(keyword)))
-  );
-
-  if (matchedTheme) {
-    themeVisuals = matchedTheme.visuals;
-  } else {
-    // Create a custom theme based on title words
-    themeVisuals = `abstract visual metaphors of ${title}, symbolic representations incorporating ${
-      titleWords.join(' and ')
-    }, thematic elements that capture the essence of ${title}`;
-  }
-
+  // Create the final prompt combining the user's description with style guidance
   const finalPrompt = `Create a sophisticated blog cover image that combines ${stylePrompts[style]}.
-Main theme: ${themeVisuals}.
+Main theme: ${description}.
 Visual style: Professional composition with ${stylePrompts[style]}.
 Color palette: Elegant use of ${primaryColor} as the primary color with harmonious complementary tones.
 Composition requirements: High-quality artistry, balanced layout, subtle depth and dimensionality.
 Additional elements: Professional lighting effects, refined gradients, cohesive visual storytelling.
-Image purpose: Professional blog header focusing on the theme of "${title}".`;
+Image purpose: Professional blog header image.`;
 
   console.log("Generated prompt:", finalPrompt);
   return finalPrompt;

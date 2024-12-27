@@ -1,6 +1,6 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
-import * as multer from 'multer';
+import multer from 'multer';
 import path from "path";
 import { FireworksClient, createPrompt } from "./lib/fireworks";
 
@@ -9,7 +9,7 @@ if (!process.env.FIREWORKS_API_KEY) {
 }
 
 // Configure multer for file uploads
-const upload = multer.default({
+const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
@@ -26,11 +26,12 @@ export function registerRoutes(app: Express): Server {
   // Handle image generation endpoint
   app.post("/api/generate", upload.single("logo"), async (req: Request, res) => {
     try {
-      const { title, style, font, primaryColor } = req.body;
+      const { title, description, style, font, primaryColor } = req.body;
       const logo = req.file;
 
       console.log("Received generation request:", {
         title,
+        description,
         style,
         font,
         primaryColor,
@@ -38,7 +39,7 @@ export function registerRoutes(app: Express): Server {
       });
 
       const prompt = createPrompt({
-        title,
+        description,
         style,
         primaryColor,
       });

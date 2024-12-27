@@ -1,5 +1,6 @@
 interface GenerateImageParams {
   title: string;
+  description: string;
   style: string;
   logo: File | null;
   font: string;
@@ -9,6 +10,7 @@ interface GenerateImageParams {
 export async function generateImage(params: GenerateImageParams): Promise<string> {
   const formData = new FormData();
   formData.append("title", params.title);
+  formData.append("description", params.description);
   formData.append("style", params.style);
   formData.append("font", params.font);
   formData.append("primaryColor", params.primaryColor);
