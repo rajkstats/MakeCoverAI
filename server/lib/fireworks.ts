@@ -34,6 +34,13 @@ export class FireworksClient {
             width: 1024,
             num_inference_steps: 50,
             guidance_scale: 7.5,
+            text_prompts: [
+              {
+                text: prompt,
+                weight: 1.0
+              }
+            ],
+            negative_prompt: "blurry, low quality, text, watermark",
           }),
         }
       );
@@ -75,9 +82,9 @@ export function createPrompt(params: {
 
   // Add specific imagery based on common tech/AI related words
   if (titleWords.includes('transformer') || titleWords.includes('attention')) {
-    conceptPrompt = "neural network connections, glowing synapses, interconnected nodes";
+    conceptPrompt = "futuristic neural network visualization, glowing interconnected nodes in a 3D space, sophisticated AI concept art";
   } else if (titleWords.includes('ai') || titleWords.includes('intelligence')) {
-    conceptPrompt = "abstract digital brain patterns, circuit-like structures";
+    conceptPrompt = "abstract digital brain patterns, circuit-like structures, high-tech visualization";
   } else if (titleWords.includes('data') || titleWords.includes('analytics')) {
     conceptPrompt = "flowing data streams, geometric patterns representing information flow";
   } else {
@@ -88,7 +95,8 @@ export function createPrompt(params: {
 Main elements: ${conceptPrompt}.
 Color scheme: elegant use of ${primaryColor} as the primary color.
 Style requirements: high-quality, clean composition, suitable for text overlay, professional blog header.
-Additional details: subtle gradient effects, balanced composition, professional lighting.`;
+Additional details: subtle gradient effects, balanced composition, professional lighting.
+The image should have space for text overlay in the center: "${title}"`;
 
   return basePrompt;
 }

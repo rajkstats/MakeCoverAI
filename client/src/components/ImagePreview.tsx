@@ -1,10 +1,14 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 interface ImagePreviewProps {
   imageUrl: string | null;
   loading: boolean;
+  title: string;
+  font: string;
+  primaryColor: string;
 }
 
 const SIZES = [
@@ -13,21 +17,58 @@ const SIZES = [
   { name: "WordPress", width: 1200, height: 628 },
 ];
 
-export default function ImagePreview({ imageUrl, loading }: ImagePreviewProps) {
+export default function ImagePreview({ imageUrl, loading, title, font, primaryColor }: ImagePreviewProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (imageUrl && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const img = new Image();
+      img.onload = () => {
+        // Set canvas dimensions to match image
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        // Draw image
+        ctx.drawImage(img, 0, 0);
+
+        // Add text overlay
+        ctx.fillStyle = primaryColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Calculate font size based on canvas width
+        const fontSize = canvas.width * 0.08;
+        ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
+
+        // Add text shadow for better readability
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = fontSize * 0.1;
+        ctx.shadowOffsetX = fontSize * 0.02;
+        ctx.shadowOffsetY = fontSize * 0.02;
+
+        // Draw text
+        ctx.fillText(title, canvas.width / 2, canvas.height / 2);
+      };
+      img.src = imageUrl;
+    }
+  }, [imageUrl, title, font, primaryColor]);
+
   const handleDownload = async (width: number, height: number, name: string) => {
-    if (!imageUrl) return;
-    
+    if (!canvasRef.current) return;
+
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const canvas = canvasRef.current;
+      const dataUrl = canvas.toDataURL('image/png');
       const a = document.createElement("a");
-      a.href = url;
+      a.href = dataUrl;
       a.download = `cover-${name.toLowerCase()}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Download failed:", error);
     }
@@ -41,9 +82,8 @@ export default function ImagePreview({ imageUrl, loading }: ImagePreviewProps) {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : imageUrl ? (
-          <img
-            src={imageUrl}
-            alt="Generated cover"
+          <canvas
+            ref={canvasRef}
             className="w-full h-full object-cover"
           />
         ) : (
