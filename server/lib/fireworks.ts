@@ -18,32 +18,42 @@ export class FireworksClient {
   async generateImage(prompt: string): Promise<string> {
     console.log("Generating image with prompt:", prompt);
 
-    const response = await fetch(
-      `${this.baseUrl}/workflows/accounts/fireworks/models/accounts/raj-k-stats-72993c/deployedModels/flux-1-dev-fp8-c1ca32b2/text_to_image`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "image/jpeg",
-          "Authorization": `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          prompt,
-        }),
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/text-to-image`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: "accounts/fireworks/models/flux",
+            prompt,
+            n: 1,
+            size: "1024x1024",
+            steps: 50,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error("Fireworks API error:", error);
+        throw new Error("Failed to generate image");
       }
-    );
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("Fireworks API error:", error);
-      throw new Error("Failed to generate image");
+      const data = await response.json();
+      if (!data.images?.[0]?.url) {
+        console.error("Unexpected API response:", data);
+        throw new Error("Invalid API response format");
+      }
+
+      return data.images[0].url;
+    } catch (error) {
+      console.error("Error details:", error);
+      throw error;
     }
-
-    const buffer = await response.buffer();
-
-    // Convert buffer to base64 for frontend display
-    const base64Image = buffer.toString('base64');
-    return `data:image/jpeg;base64,${base64Image}`;
   }
 }
 
