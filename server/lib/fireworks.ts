@@ -1,4 +1,5 @@
 import fetch from "node-fetch";
+import { z } from 'zod';
 
 interface FireworksConfig {
   apiKey: string;
@@ -40,7 +41,7 @@ export class FireworksClient {
                 weight: 1.0
               }
             ],
-            negative_prompt: "blurry, low quality, text, watermark",
+            negative_prompt: "blurry, low quality, text, watermark, letters, words, typography",
           }),
         }
       );
@@ -95,8 +96,7 @@ export function createPrompt(params: {
 Main elements: ${conceptPrompt}.
 Color scheme: elegant use of ${primaryColor} as the primary color.
 Style requirements: high-quality, clean composition, suitable for text overlay, professional blog header.
-Additional details: subtle gradient effects, balanced composition, professional lighting.
-The image should have space for text overlay in the center: "${title}"`;
+Additional details: subtle gradient effects, balanced composition, professional lighting.`;
 
   return basePrompt;
 }
