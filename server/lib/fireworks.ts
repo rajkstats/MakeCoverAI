@@ -69,34 +69,39 @@ export function createPrompt(params: {
 }): string {
   const { title, style, primaryColor } = params;
 
+  // Define base style characteristics
   const stylePrompts: Record<string, string> = {
-    modern: "minimalist composition with clean lines and geometric shapes",
-    minimal: "simple, elegant design with focus on negative space",
-    bold: "dramatic composition with strong visual hierarchy",
-    tech: "futuristic design with digital elements and tech patterns",
-    creative: "artistic composition with abstract elements and dynamic shapes",
+    modern: "clean lines, contemporary design, sleek geometric shapes, minimalist approach",
+    minimal: "elegant simplicity, refined composition, subtle textures, plenty of whitespace",
+    bold: "high contrast elements, dramatic lighting, dynamic composition, impactful visuals",
+    tech: "digital patterns, circuit-like structures, futuristic elements, technological aesthetic",
+    creative: "abstract forms, artistic flourishes, unique visual elements, expressive design",
   };
 
-  // Create a more descriptive prompt based on the title
+  // Analyze title for themes and concepts
   const titleWords = title.toLowerCase().split(' ');
   let conceptPrompt = '';
 
-  // Add specific imagery based on common tech/AI related words
-  if (titleWords.includes('transformer') || titleWords.includes('attention')) {
-    conceptPrompt = "futuristic neural network visualization, glowing interconnected nodes in a 3D space, sophisticated AI concept art";
-  } else if (titleWords.includes('ai') || titleWords.includes('intelligence')) {
-    conceptPrompt = "abstract digital brain patterns, circuit-like structures, high-tech visualization";
-  } else if (titleWords.includes('data') || titleWords.includes('analytics')) {
-    conceptPrompt = "flowing data streams, geometric patterns representing information flow";
+  // Map common themes to visual concepts
+  if (titleWords.some(word => ['ai', 'intelligence', 'machine', 'neural', 'deep'].includes(word))) {
+    conceptPrompt = "neural networks, interconnected nodes, abstract representation of artificial intelligence";
+  } else if (titleWords.some(word => ['data', 'analytics', 'analysis', 'insights'].includes(word))) {
+    conceptPrompt = "flowing data streams, abstract visualization of information, connected patterns";
+  } else if (titleWords.some(word => ['future', 'innovation', 'technology', 'tech'].includes(word))) {
+    conceptPrompt = "futuristic technological elements, innovative visual metaphors, cutting-edge design elements";
+  } else if (titleWords.some(word => ['nature', 'environment', 'eco', 'green'].includes(word))) {
+    conceptPrompt = "organic patterns, natural elements, flowing forms, environmental themes";
+  } else if (titleWords.some(word => ['business', 'corporate', 'professional'].includes(word))) {
+    conceptPrompt = "professional geometric shapes, corporate aesthetic, clean business-oriented design";
   } else {
-    conceptPrompt = "abstract shapes and patterns that represent the concept of " + title;
+    // Create a general concept based on title
+    conceptPrompt = `abstract visual representation of ${title}, thematic elements that evoke ${title}`;
   }
 
-  const basePrompt = `Create a professional blog cover image with ${stylePrompts[style] || stylePrompts.modern}.
-Main elements: ${conceptPrompt}.
-Color scheme: elegant use of ${primaryColor} as the primary color.
-Style requirements: high-quality, clean composition, suitable for text overlay, professional blog header.
-Additional details: subtle gradient effects, balanced composition, professional lighting.`;
-
-  return basePrompt;
+  // Combine style and concept into final prompt
+  return `Create a professional blog cover image combining ${stylePrompts[style]}.
+Theme elements: ${conceptPrompt}.
+Color scheme: sophisticated use of ${primaryColor} as the primary color with complementary tones.
+Style requirements: high-quality, polished composition, professional blog header.
+Additional details: subtle depth effects, balanced composition, professional lighting, cohesive visual narrative.`;
 }
