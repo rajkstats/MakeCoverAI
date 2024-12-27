@@ -18,20 +18,20 @@ export class FireworksClient {
   async generateImage(prompt: string): Promise<string> {
     console.log("Generating image with prompt:", prompt);
 
-    const response = await fetch(`${this.baseUrl}/generation`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: this.model,
-        prompt,
-        num_images: 1,
-        height: 675,
-        width: 1200,
-      }),
-    });
+    const response = await fetch(
+      `${this.baseUrl}/workflows/accounts/fireworks/models/accounts/raj-k-stats-72993c/deployedModels/flux-1-dev-fp8-c1ca32b2/text_to_image`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "image/jpeg",
+          "Authorization": `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          prompt,
+        }),
+      }
+    );
 
     if (!response.ok) {
       const error = await response.text();
@@ -39,9 +39,11 @@ export class FireworksClient {
       throw new Error("Failed to generate image");
     }
 
-    const data = await response.json();
-    console.log("Image generated successfully");
-    return data.images[0].url;
+    const buffer = await response.buffer();
+
+    // Convert buffer to base64 for frontend display
+    const base64Image = buffer.toString('base64');
+    return `data:image/jpeg;base64,${base64Image}`;
   }
 }
 
@@ -51,7 +53,7 @@ export function createPrompt(params: {
   primaryColor: string;
 }): string {
   const { title, style, primaryColor } = params;
-  
+
   const stylePrompts: Record<string, string> = {
     modern: "modern, clean, minimalist design with balanced typography",
     minimal: "minimal, elegant design focusing on essential elements",
