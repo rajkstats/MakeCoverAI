@@ -5,13 +5,15 @@ import { Download, Loader2, MoveIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import CompositionControls from "./CompositionControls";
-import { 
+import {
   TbBrandTwitter,
   TbBrandLinkedin,
   TbBrandFacebook,
   TbBrandInstagram,
-  TbBrandWordpress
+  TbBrandWordpress,
+  TbShare3
 } from "react-icons/tb";
+import { generateShareUrl, openShareWindow, shareConfig } from "@/lib/share";
 
 interface ImagePreviewProps {
   imageUrl: string | null;
@@ -28,37 +30,37 @@ interface Position {
 
 // Update SIZES constant with more platforms
 const SIZES = [
-  { 
-    name: "Twitter", 
-    width: 1200, 
+  {
+    name: "Twitter",
+    width: 1200,
     height: 675,
     icon: TbBrandTwitter,
     description: "Perfect for Twitter posts"
   },
-  { 
-    name: "LinkedIn", 
-    width: 1200, 
+  {
+    name: "LinkedIn",
+    width: 1200,
     height: 627,
     icon: TbBrandLinkedin,
     description: "Optimized for LinkedIn feed"
   },
-  { 
-    name: "Facebook", 
-    width: 1200, 
+  {
+    name: "Facebook",
+    width: 1200,
     height: 630,
     icon: TbBrandFacebook,
     description: "Ideal for Facebook sharing"
   },
-  { 
-    name: "Instagram", 
-    width: 1080, 
+  {
+    name: "Instagram",
+    width: 1080,
     height: 1080,
     icon: TbBrandInstagram,
     description: "Square format for Instagram"
   },
-  { 
-    name: "WordPress", 
-    width: 1200, 
+  {
+    name: "WordPress",
+    width: 1200,
     height: 628,
     icon: TbBrandWordpress,
     description: "Blog post featured image"
@@ -136,6 +138,8 @@ export default function ImagePreview({
   const [isDragging, setIsDragging] = useState(false);
   const [showMoveGuide, setShowMoveGuide] = useState(false);
   const [fontLoaded, setFontLoaded] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+
 
   // Local composition states
   const [textSize, setTextSize] = useState(1);
@@ -291,6 +295,7 @@ export default function ImagePreview({
           ctx.shadowOffsetX = 0;
           ctx.shadowOffsetY = 0;
 
+          setGeneratedImage(canvas.toDataURL()); // Added to capture generated image
           setRenderError(null);
         } catch (error) {
           console.error("Error rendering canvas:", error);
@@ -549,6 +554,52 @@ export default function ImagePreview({
                 </Button>
               );
             })}
+          </div>
+
+          {/* Share buttons */}
+          <div className="mt-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-sm font-medium">Share</h3>
+              <TbShare3 className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {Object.entries(shareConfig).map(([platform, config]) => {
+                const IconComponent = {
+                  twitter: TbBrandTwitter,
+                  linkedin: TbBrandLinkedin,
+                  facebook: TbBrandFacebook,
+                  instagram: TbBrandInstagram,
+                  wordpress: TbBrandWordpress
+                }[config.icon as keyof typeof shareConfig];
+
+                return (
+                  <Button
+                    key={platform}
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      if (!generatedImage) return;
+
+                      const shareUrl = generateShareUrl(platform, {
+                        url: window.location.href,
+                        title: `Check out my blog cover image: ${title}`,
+                        imageUrl: generatedImage
+                      });
+
+                      openShareWindow(shareUrl, config);
+
+                      toast({
+                        title: "Sharing",
+                        description: `Opening ${config.name} share dialog...`,
+                      });
+                    }}
+                  >
+                    {IconComponent && <IconComponent className="h-4 w-4 mr-2" />}
+                    {config.name}
+                  </Button>
+                );
+              })}
+            </div>
           </div>
         </>
       )}
