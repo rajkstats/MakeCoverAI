@@ -3,8 +3,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CustomizePanelProps {
-  logo: File | null;
-  onLogoChange: (file: File | null) => void;
   font: string;
   onFontChange: (font: string) => void;
   primaryColor: string;
@@ -19,38 +17,13 @@ const FONTS = [
 ];
 
 export default function CustomizePanel({
-  logo,
-  onLogoChange,
   font,
   onFontChange,
   primaryColor,
   onColorChange,
 }: CustomizePanelProps) {
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onLogoChange(file);
-    }
-  };
-
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="logo">Logo Upload</Label>
-        <Input
-          id="logo"
-          type="file"
-          accept="image/*"
-          onChange={handleLogoUpload}
-          className="cursor-pointer"
-        />
-        {logo && (
-          <p className="text-sm text-muted-foreground">
-            Selected: {logo.name}
-          </p>
-        )}
-      </div>
-
       <div className="space-y-2">
         <Label htmlFor="font">Font</Label>
         <Select value={font} onValueChange={onFontChange}>
