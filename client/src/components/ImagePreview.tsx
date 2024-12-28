@@ -143,16 +143,16 @@ export default function ImagePreview({
           }
 
           // Text configuration
-          ctx.textAlign = 'left'; // Changed to left align for better text wrapping
+          ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
 
           // Calculate font size with adjustment
-          const maxWidth = canvas.width * 0.4; // Reduced width for better wrapping
+          const maxWidth = canvas.width * 0.4;
           let fontSize = Math.min(canvas.width * 0.06, canvas.height * 0.12) * textSize;
           ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
 
-          // Split title into words and arrange them
-          const lines = wrapText(ctx, title.toUpperCase(), maxWidth);
+          // Split title into words and arrange them - removed toUpperCase()
+          const lines = wrapText(ctx, title, maxWidth);
 
           // Calculate total height of text block
           const lineHeight = fontSize * 1.2;
