@@ -23,10 +23,9 @@ const fireworks = new FireworksClient({
 
 export function registerRoutes(app: Express): Server {
   // Handle image generation endpoint
-  app.post("/api/generate", upload.single("logo"), async (req: Request, res) => {
+  app.post("/api/generate", upload.none(), async (req: Request, res) => {
     try {
       const { title, description, style, font, primaryColor } = req.body;
-      const logo = req.file;
 
       console.log("Received generation request:", {
         title,
@@ -34,7 +33,6 @@ export function registerRoutes(app: Express): Server {
         style,
         font,
         primaryColor,
-        hasLogo: !!logo,
       });
 
       const prompt = createPrompt({

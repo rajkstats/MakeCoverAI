@@ -57,7 +57,6 @@ export default function Home() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedStyle, setSelectedStyle] = useState<StyleTemplate>("modern");
-  const [logo, setLogo] = useState<File | null>(null);
   const [font, setFont] = useState(stylePresets.modern.font);
   const [primaryColor, setPrimaryColor] = useState(stylePresets.modern.primaryColor);
   const [textSize, setTextSize] = useState(stylePresets.modern.textSize);
@@ -162,7 +161,6 @@ export default function Home() {
       title,
       description,
       style: selectedStyle,
-      logo,
       font,
       primaryColor,
       textComposition: {
@@ -228,8 +226,6 @@ export default function Home() {
               />
 
               <CustomizePanel
-                logo={logo}
-                onLogoChange={setLogo}
                 font={font}
                 onFontChange={setFont}
                 primaryColor={primaryColor}

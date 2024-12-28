@@ -9,7 +9,6 @@ interface GenerateImageParams {
   title: string;
   description: string;
   style: string;
-  logo: File | null;
   font: string;
   primaryColor: string;
   textComposition: TextComposition;
@@ -23,9 +22,6 @@ export async function generateImage(params: GenerateImageParams): Promise<string
   formData.append("font", params.font);
   formData.append("primaryColor", params.primaryColor);
   formData.append("textComposition", JSON.stringify(params.textComposition));
-  if (params.logo) {
-    formData.append("logo", params.logo);
-  }
 
   const response = await fetch("/api/generate", {
     method: "POST",
