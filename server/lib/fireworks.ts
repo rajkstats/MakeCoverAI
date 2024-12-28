@@ -73,6 +73,61 @@ export class FireworksClient {
       );
     }
   }
+
+  async getStyleRecommendations(title: string, description: string) {
+    console.log("Getting style recommendations for:", { title, description });
+
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: "accounts/fireworks/models/llama-v2-70b-chat",
+            messages: [
+              {
+                role: "system",
+                content: `You are a design expert specialized in blog cover images. Analyze blog titles and descriptions to recommend visual styles.
+                Output format must be JSON with the following structure:
+                {
+                  "style": "modern" | "minimal" | "bold" | "tech" | "creative",
+                  "font": "inter" | "helvetica" | "roboto" | "georgia",
+                  "primaryColor": string (hex color),
+                  "rationale": string (explanation)
+                }`
+              },
+              {
+                role: "user",
+                content: `Title: "${title}"
+                Description: "${description}"
+
+                Please analyze the content and recommend the most suitable visual style.`
+              }
+            ],
+            max_tokens: 500,
+            temperature: 0.7
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to get recommendations: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const recommendation = JSON.parse(data.choices[0].message.content);
+
+      console.log("Generated recommendations:", recommendation);
+      return recommendation;
+    } catch (error) {
+      console.error("Style recommendation error:", error);
+      throw new Error("Failed to generate style recommendations");
+    }
+  }
 }
 
 export function createPrompt(params: {

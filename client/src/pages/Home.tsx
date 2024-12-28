@@ -1,17 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import StyleSelector from "@/components/StyleSelector";
 import CustomizePanel from "@/components/CustomizePanel";
 import ImagePreview from "@/components/ImagePreview";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { generateImage } from "@/lib/api";
 import type { StyleTemplate } from "@/lib/templates";
+import { queryClient } from "@/lib/queryClient";
 
 // Preset configurations for each style
 const stylePresets: Record<StyleTemplate, {
@@ -62,8 +63,47 @@ export default function Home() {
   const [textSize, setTextSize] = useState(stylePresets.modern.textSize);
   const [textPosition, setTextPosition] = useState(stylePresets.modern.textPosition);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [showRecommendations, setShowRecommendations] = useState(false);
 
   const { toast } = useToast();
+
+  // Fetch style recommendations when title and description are available
+  const { data: recommendations, isLoading: isRecommending } = useQuery({
+    queryKey: ['/api/recommend-style', title, description],
+    queryFn: async () => {
+      if (!title.trim() || !description.trim()) return null;
+
+      const response = await fetch('/api/recommend-style', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description })
+      });
+
+      if (!response.ok) throw new Error('Failed to get recommendations');
+      return response.json();
+    },
+    enabled: !!(title.trim() && description.trim()),
+    staleTime: 30000 // Cache for 30 seconds
+  });
+
+  // Apply recommendations when available
+  useEffect(() => {
+    if (recommendations && showRecommendations) {
+      const { style, font: recommendedFont, primaryColor: recommendedColor } = recommendations;
+      setSelectedStyle(style as StyleTemplate);
+      setFont(recommendedFont);
+      setPrimaryColor(recommendedColor);
+
+      const preset = stylePresets[style as StyleTemplate];
+      setTextSize(preset.textSize);
+      setTextPosition(preset.textPosition);
+
+      toast({
+        title: "AI Style Recommendations Applied",
+        description: recommendations.rationale,
+      });
+    }
+  }, [recommendations, showRecommendations, toast]);
 
   // Handle style template change
   const handleStyleChange = (style: StyleTemplate) => {
@@ -73,6 +113,7 @@ export default function Home() {
     setPrimaryColor(preset.primaryColor);
     setTextSize(preset.textSize);
     setTextPosition(preset.textPosition);
+    setShowRecommendations(false);
 
     toast({
       title: "Style Applied",
@@ -168,6 +209,18 @@ export default function Home() {
                   className="min-h-[100px]"
                 />
               </div>
+
+              {recommendations && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowRecommendations(true)}
+                  disabled={isRecommending}
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  {isRecommending ? "Getting AI Recommendations..." : "Use AI Recommendations"}
+                </Button>
+              )}
 
               <StyleSelector
                 selected={selectedStyle}

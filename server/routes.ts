@@ -1,7 +1,6 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import multer from 'multer';
-import path from "path";
 import { FireworksClient, createPrompt } from "./lib/fireworks";
 
 if (!process.env.FIREWORKS_API_KEY) {
@@ -52,6 +51,23 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Generation error:", error);
       res.status(500).json({ message: "Failed to generate image" });
+    }
+  });
+
+  // Add style recommendations endpoint
+  app.post("/api/recommend-style", async (req, res) => {
+    try {
+      const { title, description } = req.body;
+
+      if (!title || !description) {
+        return res.status(400).json({ message: "Title and description are required" });
+      }
+
+      const recommendation = await fireworks.getStyleRecommendations(title, description);
+      res.json(recommendation);
+    } catch (error) {
+      console.error("Style recommendation error:", error);
+      res.status(500).json({ message: "Failed to get style recommendations" });
     }
   });
 
