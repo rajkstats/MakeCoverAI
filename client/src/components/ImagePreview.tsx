@@ -51,6 +51,37 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return lines;
 }
 
+// Add color analysis utilities
+function getPixelData(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) {
+  const imageData = ctx.getImageData(x, y, width, height);
+  const data = imageData.data;
+  let r = 0, g = 0, b = 0;
+
+  // Calculate average RGB values
+  for (let i = 0; i < data.length; i += 4) {
+    r += data[i];
+    g += data[i + 1];
+    b += data[i + 2];
+  }
+
+  const pixels = data.length / 4;
+  return {
+    r: Math.round(r / pixels),
+    g: Math.round(g / pixels),
+    b: Math.round(b / pixels)
+  };
+}
+
+function calculateLuminance(r: number, g: number, b: number) {
+  // Relative luminance formula
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
+function getContrastColor(backgroundColor: { r: number, g: number, b: number }) {
+  const luminance = calculateLuminance(backgroundColor.r, backgroundColor.g, backgroundColor.b);
+  return luminance > 0.5 ? '#000000' : '#FFFFFF';
+}
+
 export default function ImagePreview({
   imageUrl,
   loading,
@@ -168,17 +199,30 @@ export default function ImagePreview({
           ctx.shadowOffsetX = 2;
           ctx.shadowOffsetY = 2;
 
-          // Draw each line
+          // Analyze background color at text position
+          const padding = fontSize * 0.5;
+          const bgColor = getPixelData(
+            ctx,
+            Math.max(0, xPos - padding),
+            Math.max(0, yPos - padding),
+            Math.min(canvas.width - xPos + padding, maxWidth + padding * 2),
+            Math.min(canvas.height - yPos + padding, totalHeight + padding * 2)
+          );
+
+          // Determine optimal text color
+          const textColor = getContrastColor(bgColor);
+
+          // Draw each line with dynamic color
           lines.forEach((line, index) => {
             const lineY = yPos + index * lineHeight;
 
             // Draw white outline
-            ctx.strokeStyle = 'white';
+            ctx.strokeStyle = textColor === '#000000' ? 'white' : 'black';
             ctx.lineWidth = fontSize * 0.08;
             ctx.strokeText(line, xPos, lineY);
 
             // Draw text with color intensity
-            ctx.fillStyle = primaryColor;
+            ctx.fillStyle = textColor;
             if (colorIntensity !== 1) {
               ctx.globalAlpha = Math.max(0, Math.min(1, colorIntensity));
             }
@@ -254,7 +298,7 @@ export default function ImagePreview({
     const fontSize = Math.min(canvas.width * 0.06, canvas.height * 0.12) * textSize;
     ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
     const maxWidth = canvas.width * 0.4;
-    const lines = wrapText(ctx, title.toUpperCase(), maxWidth);
+    const lines = wrapText(ctx, title, maxWidth);
     const lineHeight = fontSize * 1.2;
     const totalHeight = lineHeight * lines.length;
 
@@ -303,7 +347,7 @@ export default function ImagePreview({
       const fontSize = Math.min(canvas.width * 0.06, canvas.height * 0.12) * textSize;
       ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
       const maxWidth = canvas.width * 0.4;
-      const lines = wrapText(ctx, title.toUpperCase(), maxWidth);
+      const lines = wrapText(ctx, title, maxWidth);
       const lineHeight = fontSize * 1.2;
       const totalHeight = lineHeight * lines.length;
 
