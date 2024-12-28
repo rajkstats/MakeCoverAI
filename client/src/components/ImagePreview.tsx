@@ -24,12 +24,32 @@ const SIZES = [
   { name: "WordPress", width: 1200, height: 628 },
 ];
 
-// Grid configuration
+// Grid configuration for text block positioning
 const GRID = {
   rows: 3,
   cols: 3,
   snapThreshold: 0.05, // Distance to snap (5% of canvas size)
 };
+
+// Function to wrap text into multiple lines
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const word = words[i];
+    const width = ctx.measureText(currentLine + " " + word).width;
+    if (width < maxWidth) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  lines.push(currentLine);
+  return lines;
+}
 
 export default function ImagePreview({
   imageUrl,
@@ -53,38 +73,6 @@ export default function ImagePreview({
   // Store canvas dimensions for coordinate calculations
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
 
-  // Function to find nearest grid point
-  const findNearestGridPoint = (x: number, y: number): Position | null => {
-    const gridPoints: Position[] = [];
-
-    // Generate grid points
-    for (let row = 0; row <= GRID.rows; row++) {
-      for (let col = 0; col <= GRID.cols; col++) {
-        gridPoints.push({
-          x: col / GRID.cols,
-          y: row / GRID.rows,
-        });
-      }
-    }
-
-    // Find nearest point within threshold
-    let nearest: Position | null = null;
-    let minDistance = Infinity;
-
-    gridPoints.forEach(point => {
-      const dx = point.x - x;
-      const dy = point.y - y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance < GRID.snapThreshold && distance < minDistance) {
-        minDistance = distance;
-        nearest = point;
-      }
-    });
-
-    return nearest;
-  };
-
   useEffect(() => {
     if (!canvasRef.current) return;
 
@@ -99,7 +87,6 @@ export default function ImagePreview({
 
     const renderPreview = () => {
       if (!imageUrl) {
-        // Set default canvas size and clear
         canvas.width = 1200;
         canvas.height = 675;
         setCanvasDimensions({ width: 1200, height: 675 });
@@ -156,24 +143,24 @@ export default function ImagePreview({
           }
 
           // Text configuration
-          ctx.textAlign = 'center';
+          ctx.textAlign = 'left'; // Changed to left align for better text wrapping
           ctx.textBaseline = 'middle';
 
           // Calculate font size with adjustment
-          const maxWidth = canvas.width * 0.8;
-          let fontSize = Math.min(canvas.width * 0.08, canvas.height * 0.15) * textSize;
+          const maxWidth = canvas.width * 0.4; // Reduced width for better wrapping
+          let fontSize = Math.min(canvas.width * 0.06, canvas.height * 0.12) * textSize;
           ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
 
-          // Adjust text size if needed
-          let textWidth = ctx.measureText(title).width;
-          if (textWidth > maxWidth) {
-            fontSize *= maxWidth / textWidth;
-            ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
-          }
+          // Split title into words and arrange them
+          const lines = wrapText(ctx, title.toUpperCase(), maxWidth);
 
-          // Calculate position based on relative coordinates
+          // Calculate total height of text block
+          const lineHeight = fontSize * 1.2;
+          const totalHeight = lineHeight * lines.length;
+
+          // Calculate starting position
           const xPos = canvas.width * textPosition.x;
-          const yPos = canvas.height * textPosition.y;
+          const yPos = canvas.height * textPosition.y - totalHeight / 2;
 
           // Add shadow for better visibility
           ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
@@ -181,30 +168,35 @@ export default function ImagePreview({
           ctx.shadowOffsetX = 2;
           ctx.shadowOffsetY = 2;
 
-          // Draw white outline
-          ctx.strokeStyle = 'white';
-          ctx.lineWidth = fontSize * 0.08;
-          ctx.strokeText(title, xPos, yPos);
+          // Draw each line
+          lines.forEach((line, index) => {
+            const lineY = yPos + index * lineHeight;
 
-          // Draw text with color intensity
-          ctx.fillStyle = primaryColor;
-          if (colorIntensity !== 1) {
-            ctx.globalAlpha = Math.max(0, Math.min(1, colorIntensity));
-          }
-          ctx.fillText(title, xPos, yPos);
+            // Draw white outline
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = fontSize * 0.08;
+            ctx.strokeText(line, xPos, lineY);
+
+            // Draw text with color intensity
+            ctx.fillStyle = primaryColor;
+            if (colorIntensity !== 1) {
+              ctx.globalAlpha = Math.max(0, Math.min(1, colorIntensity));
+            }
+            ctx.fillText(line, xPos, lineY);
+          });
 
           // If dragging or hovering, show move guide
           if (showMoveGuide || isDragging) {
-            // Draw a subtle indicator around the text
+            // Draw a subtle indicator around the text block
             const padding = fontSize * 0.5;
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
             ctx.lineWidth = 2;
             ctx.setLineDash([5, 5]);
             ctx.strokeRect(
-              xPos - textWidth / 2 - padding,
-              yPos - fontSize / 2 - padding,
-              textWidth + padding * 2,
-              fontSize + padding * 2
+              xPos - padding,
+              yPos - padding,
+              maxWidth + padding * 2,
+              totalHeight + padding * 2
             );
             ctx.setLineDash([]);
           }
@@ -259,21 +251,23 @@ export default function ImagePreview({
 
     // Calculate text bounds
     const ctx = canvas.getContext('2d')!;
-    const fontSize = Math.min(canvas.width * 0.08, canvas.height * 0.15) * textSize;
+    const fontSize = Math.min(canvas.width * 0.06, canvas.height * 0.12) * textSize;
     ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
-    const textWidth = ctx.measureText(title).width;
-    const textHeight = fontSize;
+    const maxWidth = canvas.width * 0.4;
+    const lines = wrapText(ctx, title.toUpperCase(), maxWidth);
+    const lineHeight = fontSize * 1.2;
+    const totalHeight = lineHeight * lines.length;
 
     const textX = canvas.width * textPosition.x;
-    const textY = canvas.height * textPosition.y;
+    const textY = canvas.height * textPosition.y - totalHeight / 2;
 
     // Check if click is within text bounds (with some padding)
     const padding = fontSize * 0.5;
     if (
-      mouseX >= textX - textWidth/2 - padding &&
-      mouseX <= textX + textWidth/2 + padding &&
-      mouseY >= textY - textHeight/2 - padding &&
-      mouseY <= textY + textHeight/2 + padding
+      mouseX >= textX - padding &&
+      mouseX <= textX + maxWidth + padding &&
+      mouseY >= textY - padding &&
+      mouseY <= textY + totalHeight + padding
     ) {
       setIsDragging(true);
     }
@@ -291,41 +285,37 @@ export default function ImagePreview({
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
 
-    // Update text position if dragging
     if (isDragging) {
-      // Calculate relative position
       const newX = x / canvas.width;
       const newY = y / canvas.height;
 
-      // Find nearest grid point if within threshold
       const nearestPoint = findNearestGridPoint(newX, newY);
-
       if (nearestPoint) {
-        // Snap to grid point
         setTextPosition(nearestPoint);
       } else {
-        // Clamp the position within the canvas bounds
         const clampedX = Math.max(0.1, Math.min(0.9, newX));
         const clampedY = Math.max(0.1, Math.min(0.9, newY));
         setTextPosition({ x: clampedX, y: clampedY });
       }
     } else {
-      // Check if mouse is over text area to show move guide
+      // Update hover state for text block
       const ctx = canvas.getContext('2d')!;
-      const fontSize = Math.min(canvas.width * 0.08, canvas.height * 0.15) * textSize;
+      const fontSize = Math.min(canvas.width * 0.06, canvas.height * 0.12) * textSize;
       ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
-      const textWidth = ctx.measureText(title).width;
-      const textHeight = fontSize;
+      const maxWidth = canvas.width * 0.4;
+      const lines = wrapText(ctx, title.toUpperCase(), maxWidth);
+      const lineHeight = fontSize * 1.2;
+      const totalHeight = lineHeight * lines.length;
 
       const textX = canvas.width * textPosition.x;
-      const textY = canvas.height * textPosition.y;
+      const textY = canvas.height * textPosition.y - totalHeight / 2;
 
       const padding = fontSize * 0.5;
       setShowMoveGuide(
-        x >= textX - textWidth/2 - padding &&
-        x <= textX + textWidth/2 + padding &&
-        y >= textY - textHeight/2 - padding &&
-        y <= textY + textHeight/2 + padding
+        x >= textX - padding &&
+        x <= textX + maxWidth + padding &&
+        y >= textY - padding &&
+        y <= textY + totalHeight + padding
       );
     }
   };
@@ -337,6 +327,38 @@ export default function ImagePreview({
   const handleMouseLeave = () => {
     setIsDragging(false);
     setShowMoveGuide(false);
+  };
+
+  // Function to find nearest grid point
+  const findNearestGridPoint = (x: number, y: number): Position | null => {
+    const gridPoints: Position[] = [];
+
+    // Generate grid points
+    for (let row = 0; row <= GRID.rows; row++) {
+      for (let col = 0; col <= GRID.cols; col++) {
+        gridPoints.push({
+          x: col / GRID.cols,
+          y: row / GRID.rows,
+        });
+      }
+    }
+
+    // Find nearest point within threshold
+    let nearest: Position | null = null;
+    let minDistance = Infinity;
+
+    gridPoints.forEach(point => {
+      const dx = point.x - x;
+      const dy = point.y - y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < GRID.snapThreshold && distance < minDistance) {
+        minDistance = distance;
+        nearest = point;
+      }
+    });
+
+    return nearest;
   };
 
   const handleDownload = async (width: number, height: number, name: string) => {
