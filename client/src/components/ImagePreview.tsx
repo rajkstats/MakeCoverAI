@@ -1,9 +1,17 @@
 import { Card } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, MoveIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import CompositionControls from "./CompositionControls";
+import { 
+  TbBrandTwitter,
+  TbBrandLinkedin,
+  TbBrandFacebook,
+  TbBrandInstagram,
+  TbBrandWordpress
+} from "react-icons/tb";
 
 interface ImagePreviewProps {
   imageUrl: string | null;
@@ -18,10 +26,43 @@ interface Position {
   y: number;
 }
 
+// Update SIZES constant with more platforms
 const SIZES = [
-  { name: "Twitter", width: 1200, height: 675 },
-  { name: "Medium", width: 1400, height: 787 },
-  { name: "WordPress", width: 1200, height: 628 },
+  { 
+    name: "Twitter", 
+    width: 1200, 
+    height: 675,
+    icon: TbBrandTwitter,
+    description: "Perfect for Twitter posts"
+  },
+  { 
+    name: "LinkedIn", 
+    width: 1200, 
+    height: 627,
+    icon: TbBrandLinkedin,
+    description: "Optimized for LinkedIn feed"
+  },
+  { 
+    name: "Facebook", 
+    width: 1200, 
+    height: 630,
+    icon: TbBrandFacebook,
+    description: "Ideal for Facebook sharing"
+  },
+  { 
+    name: "Instagram", 
+    width: 1080, 
+    height: 1080,
+    icon: TbBrandInstagram,
+    description: "Square format for Instagram"
+  },
+  { 
+    name: "WordPress", 
+    width: 1200, 
+    height: 628,
+    icon: TbBrandWordpress,
+    description: "Blog post featured image"
+  },
 ];
 
 // Grid configuration for text block positioning
@@ -408,13 +449,32 @@ export default function ImagePreview({
 
     try {
       const canvas = canvasRef.current;
-      const dataUrl = canvas.toDataURL('image/png');
+
+      // Create a temporary canvas for the resized image
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const tempCtx = tempCanvas.getContext('2d');
+
+      if (!tempCtx) {
+        throw new Error("Failed to get temporary canvas context");
+      }
+
+      // Draw the original canvas content onto the temporary canvas with proper scaling
+      tempCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, width, height);
+
+      const dataUrl = tempCanvas.toDataURL('image/png');
       const a = document.createElement("a");
       a.href = dataUrl;
       a.download = `cover-${name.toLowerCase()}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: `Image downloaded for ${name}`,
+      });
     } catch (error) {
       console.error("Download failed:", error);
       toast({
@@ -469,18 +529,26 @@ export default function ImagePreview({
             />
           </Card>
 
-          <div className="grid grid-cols-3 gap-2">
-            {SIZES.map((size) => (
-              <Button
-                key={size.name}
-                variant="outline"
-                className="w-full"
-                onClick={() => handleDownload(size.width, size.height, size.name)}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                {size.name}
-              </Button>
-            ))}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {SIZES.map((size) => {
+              const Icon = size.icon;
+              return (
+                <Button
+                  key={size.name}
+                  variant="outline"
+                  className="w-full flex items-center justify-center space-x-2 py-4"
+                  onClick={() => handleDownload(size.width, size.height, size.name)}
+                >
+                  <Icon className="h-4 w-4" />
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">{size.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {size.width}x{size.height}
+                    </span>
+                  </div>
+                </Button>
+              );
+            })}
           </div>
         </>
       )}
