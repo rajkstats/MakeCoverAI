@@ -94,6 +94,7 @@ export default function ImagePreview({
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showMoveGuide, setShowMoveGuide] = useState(false);
+  const [fontLoaded, setFontLoaded] = useState(false);
 
   // Local composition states
   const [textSize, setTextSize] = useState(1);
@@ -105,7 +106,24 @@ export default function ImagePreview({
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    // Load font first
+    const loadFont = async () => {
+      try {
+        console.log(`Loading font: ${font}`);
+        await document.fonts.load(`bold 16px "${font}"`);
+        console.log(`Font "${font}" loaded successfully`);
+        setFontLoaded(true);
+      } catch (error) {
+        console.error(`Error loading font ${font}:`, error);
+        setRenderError(`Failed to load font: ${font}`);
+      }
+    };
+
+    loadFont();
+  }, [font]);
+
+  useEffect(() => {
+    if (!canvasRef.current || !fontLoaded) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -117,6 +135,8 @@ export default function ImagePreview({
     }
 
     const renderPreview = () => {
+      console.log("Starting canvas render with font:", font);
+
       if (!imageUrl) {
         canvas.width = 1200;
         canvas.height = 675;
@@ -135,43 +155,8 @@ export default function ImagePreview({
           setCanvasDimensions({ width: img.width, height: img.height });
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          // Apply background blur if needed
-          if (backgroundBlur > 0) {
-            ctx.filter = `blur(${backgroundBlur}px)`;
-          }
-
           // Draw image
           ctx.drawImage(img, 0, 0);
-
-          // Reset filter for text
-          ctx.filter = 'none';
-
-          // Draw grid when dragging
-          if (isDragging) {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([5, 5]);
-
-            // Draw vertical lines
-            for (let i = 1; i < GRID.cols; i++) {
-              const x = (canvas.width * i) / GRID.cols;
-              ctx.beginPath();
-              ctx.moveTo(x, 0);
-              ctx.lineTo(x, canvas.height);
-              ctx.stroke();
-            }
-
-            // Draw horizontal lines
-            for (let i = 1; i < GRID.rows; i++) {
-              const y = (canvas.height * i) / GRID.rows;
-              ctx.beginPath();
-              ctx.moveTo(0, y);
-              ctx.lineTo(canvas.width, y);
-              ctx.stroke();
-            }
-
-            ctx.setLineDash([]);
-          }
 
           // Text configuration
           ctx.textAlign = 'left';
@@ -180,10 +165,23 @@ export default function ImagePreview({
           // Calculate font size with adjustment
           const maxWidth = canvas.width * 0.4;
           let fontSize = Math.min(canvas.width * 0.06, canvas.height * 0.12) * textSize;
-          ctx.font = `bold ${fontSize}px "${font}", sans-serif`;
+
+          // Set font with proper formatting and fallbacks
+          const fontString = `bold ${fontSize}px "${font}", system-ui, sans-serif`;
+          console.log("Applying font:", fontString);
+          ctx.font = fontString;
+
+          // Log font metrics for debugging
+          const metrics = ctx.measureText('Test');
+          console.log("Font metrics:", {
+            actualFont: ctx.font,
+            width: metrics.width,
+            height: metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
+          });
 
           // Split title into words and arrange them
           const lines = wrapText(ctx, title, maxWidth);
+          console.log("Text wrapped into lines:", lines);
 
           // Calculate total height of text block
           const lineHeight = fontSize * 1.2;
@@ -278,7 +276,7 @@ export default function ImagePreview({
     };
 
     renderPreview();
-  }, [imageUrl, title, font, primaryColor, textSize, textPosition, colorIntensity, backgroundBlur, showMoveGuide, isDragging, toast]);
+  }, [imageUrl, title, font, fontLoaded, primaryColor, textSize, textPosition, colorIntensity, backgroundBlur, showMoveGuide, isDragging, toast]);
 
   // Handle mouse events for drag and drop
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
